@@ -1,68 +1,166 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* src/App.css */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Container principal do PWA */
+.pwa-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 40px auto; 
+  display: flex;
+  flex-direction: column;
+  gap: 25px; 
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* --- ESTILO DA LOGO (NO TOPO E ARREDONDADA) --- */
+.pwa-logo {
+  width: 150px; 
+  height: 150px; /* Definindo altura igual à largura para ficar um círculo perfeito */
+  object-fit: cover; /* Garante que a imagem preencha o círculo sem distorcer */
+  margin: 0 auto; 
+  margin-bottom: 5px; 
+  border-radius: 50%; /* Faz a imagem ficar circular */
+  border: 3px solid #28a745; /* Opcional: Adiciona uma borda verde ao redor da logo */
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); /* Opcional: Adiciona um brilho verde */
 }
 
 body {
+  /* --- NOVO: LOGO DE FUNDO DA PÁGINA INTEIRA --- */
+  background-image: url('./assets/gefron-logo.jpg'); /* Caminho para a sua logo */
+  background-size: cover; /* Faz a imagem cobrir todo o container */
+  background-position: center; /* Centraliza a imagem */
+  background-repeat: no-repeat; /* Não repete a imagem */
+  background-attachment: fixed; /* A logo fica fixa ao rolar */
+  
+  /* Cor de fundo para escurecer a logo e ser o tema base */
+  background-color: #1e1e1e; 
+  /* Mistura a cor de fundo com a imagem da logo */
+  background-blend-mode: multiply; 
+  
+  /* Ajuste a opacidade aqui. 0.2 (20%) é um bom começo, mas você pode experimentar. */
+  opacity: 0.7; /* A opacidade é para o background inteiro, então o conteúdo fica claro */
+}
+
+/* Títulos */
+.header-title {
+  text-align: center;
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.header-subtitle {
+  text-align: center;
+  margin: -20px 0 0 0; 
+  font-size: 1rem;
+  color: #aaa;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Card de Configuração (COM FUNDO SÓLIDO) */
+.config-card {
+  background-color: #2c2c2c; 
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  border: 1px solid #444;
+}
+.config-card h3 {
+  margin-top: 0;
+  color: #fff;
+  font-size: 1.4rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 10px;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+/* Label do Input */
+.config-label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #ccc;
+}
+
+/* Input do Chip ID (COM FUNDO SÓLIDO) */
+.chip-input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  box-sizing: border-box; 
+  background-color: #1e1e1e; 
+  border: 1px solid #555;
+  color: #f0f0f0;
+  font-size: 1rem;
+  border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.chip-input:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+}
+.chip-input:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+/* Botão de Iniciar/Parar */
+.toggle-button {
+  width: 100%;
+  padding: 14px;
+  color: white;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: border-color 0.25s;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
 }
-button:hover {
-  border-color: #646cff;
+.toggle-button:active {
+  transform: scale(0.98); 
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.toggle-button.online { 
+  background-color: #28a745;
+  box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+}
+.toggle-button.online:hover {
+  background-color: #218838;
+}
+.toggle-button.offline { 
+  background-color: #dc3545;
+  box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
+}
+.toggle-button.offline:hover {
+  background-color: #c82333;
+}
+.toggle-button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Log de Atividades */
+.log-header {
+  margin-bottom: 10px;
+  color: #a39a9a;
+  font-size: 1.4rem;
 }
+.log-box {
+  height: 300px;
+  overflow-y: scroll;
+  border: 1px solid #1a1919; 
+  padding: 15px;
+  background-color: #0c0c0c; 
+  color: #00ff00; 
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  border-radius: 6px;
+}
+.log-box p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+.log-box .log-placeholder { 
+  color: #858282;
+  font-style: italic;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
