@@ -1,11 +1,12 @@
 // gefron-cliente/src/services/dbClientService.js
 
 import { db } from "../firebaseConfig";
-import { ref, onValue, off, set, serverTimestamp } from "firebase/database"; 
-
+// Importações necessárias para o tracking contínuo
+import { ref, push, serverTimestamp } from "firebase/database"; 
 
 // ----------------------------------------------------
 // 1. OBTENÇÃO DA LOCALIZAÇÃO (GPS)
+// (Esta é a sua função original, que está ótima)
 // ----------------------------------------------------
 
 /**
@@ -31,7 +32,7 @@ const getCurrentLocation = () => {
         // Erro: geralmente permissão negada, GPS desligado ou timeout
         let msg = `Erro ao obter localização (${error.code}): ${error.message}`;
         if (error.code === 1) {
-             msg = "Permissão de localização negada pelo usuário.";
+            msg = "Permissão de localização negada pelo usuário.";
         }
         reject(new Error(msg));
       },
@@ -47,96 +48,69 @@ const getCurrentLocation = () => {
 
 
 // ----------------------------------------------------
-// 2. ENVIO DA RESPOSTA (ESCRITA NO FIREBASE)
+// 2. NOVA FUNÇÃO DE TRACKING (LOGAR LOCALIZAÇÃO)
+// (Esta substitui todas as outras funções antigas)
 // ----------------------------------------------------
 
 /**
- * Envia a resposta de localização (ou erro) para o nó /localizacoes.
- * @param {string} chipId - O ID do chip do celular alvo.
- * @param {Object|null} locationData - Dados de lat/lng/precisao.
- * @param {boolean} success - Indica se a coleta foi bem-sucedida.
- * @param {string|null} errorMessage - Mensagem de erro, se houver.
- */
-export const sendLocationResponse = async (chipId, locationData, success, errorMessage = null) => {
-    // Define o caminho onde a resposta será escrita: /localizacoes/{chipId}
-    const responseRef = ref(db, `localizacoes/${chipId}`);
-
-    const payload = {
-        timestamp: serverTimestamp(),
-        success: success,
-        // Adiciona dados de localização (se houver) ou deixa o objeto vazio
-        ...(locationData || {}), 
-        errorMessage: errorMessage
-    };
-
-    await set(responseRef, payload);
-    console.log(`Resposta enviada para /localizacoes/${chipId}. Status: ${success ? 'SUCESSO' : 'FALHA'}`);
-}
-
-
-// ----------------------------------------------------
-// 3. EXECUÇÃO DO PING (RECEPÇÃO E RESPOSTA)
-// ----------------------------------------------------
-
-/**
- * Executa a obtenção do GPS e envia a resposta de localização ao Firebase.
- * Esta é a função que é chamada quando o PING é recebido.
+ * Tenta obter o GPS e salvar um registro (sucesso ou falha)
+ * no histórico do Firebase.
  * @param {string} chipId - O ID do chip do celular.
  */
-export const executeResponse = async (chipId) => {
-    try {
-        // 1. Tenta obter a localização
-        const locationData = await getCurrentLocation();
-        
-        // 2. Se for bem-sucedido, envia a localização
-        await sendLocationResponse(chipId, locationData, true); 
+export const logCurrentLocation = async (chipId) => {
+  
+  console.log("--- Iniciando logCurrentLocation ---"); // DEBUG
+  
+  // Caminho para O HISTÓRICO daquele chip (ex: /historico_localizacoes/GEFRONTESTE-05)
+  const historyRef = ref(db, `historico_localizacoes/${chipId}`);
 
-        return { success: true, message: `Localização obtida e enviada. Lat: ${locationData.lat.toFixed(4)}` };
-        
-    } catch (error) {
-        // 3. Se falhar, envia um status de erro
-        await sendLocationResponse(chipId, null, false, error.message); 
-
-        return { success: false, message: `Falha ao obter GPS: ${error.message}` };
-    }
-}
-
-
-// ----------------------------------------------------
-// 4. INÍCIO DA ESCUTA (O UVINTE EM TEMPO REAL)
-// ----------------------------------------------------
-
-/**
- * Inicia a escuta no Firebase por comandos de PING para o Chip ID.
- * @param {string} chipId - O ID do chip que este cliente está monitorando.
- * @param {Function} onLog - Função para logar mensagens na interface do usuário.
- * @returns {Function} Função para parar de escutar (cleanup).
- */
-export const startListeningForPings = (chipId, onLog) => {
-  if (!chipId) return null;
-
-  // Caminho que o cliente escuta: /comandos/{chipId}
-  const commandRef = ref(db, `comandos/${chipId}`);
-
-  // onValue é o listener em tempo real do Firebase
-  const listener = onValue(commandRef, async (snapshot) => {
-    const data = snapshot.val();
+  try {
+    // 1. Tenta pegar o GPS
+    console.log("Tentando pegar GPS..."); // DEBUG
+    const locationData = await getCurrentLocation();
+    console.log("GPS obtido:", locationData); // DEBUG
     
-    // Verifica se os dados são válidos e se é o comando de PING
-    if (data && data.solicitacao === "ping" && data.status === "enviado") {
-      onLog(`Comando PING recebido de ${chipId}. Acionando GPS...`);
-      
-      // Executa a resposta (pegar GPS e enviar para /localizacoes)
-      const result = await executeResponse(chipId); 
-      
-      // Loga o resultado na interface
-      onLog(result.message);
-    }
-  });
+    // 2. Prepara o payload de SUCESSO
+    const payload = {
+      lat: locationData.lat,
+      lng: locationData.lng,
+      precisao: locationData.precisao,
+      timestamp: serverTimestamp(), // Hora do Firebase
+      success: true // ONLINE (Verde)
+    };
 
-  // Retorna a função de limpeza, importante para o React
-  return () => {
-    off(commandRef, 'value', listener);
-    onLog("Escuta de comandos parada.");
-  };
+    // 3. Tenta salvar no Firebase (push cria um novo ID na lista)
+    console.log("Tentando salvar no Firebase (push)..."); // DEBUG
+    await push(historyRef, payload);
+    console.log("Salvo no Firebase com sucesso."); // DEBUG
+
+    // Retorna a mensagem de sucesso para o log da tela
+    return { success: true, message: `Online. Lat: ${locationData.lat.toFixed(4)}` };
+
+  } catch (error) {
+    // 4. Se falhou (GPS ou Rede)
+    console.error("ERRO no bloco 'try' principal:", error); // DEBUG
+
+    // Tenta gravar um PONTO VERMELHO (falha de GPS, mas com rede)
+    try {
+      const payload = {
+        timestamp: serverTimestamp(),
+        success: false, // OFFLINE (Vermelho)
+        errorMessage: error.message, // Salva a mensagem de erro (ex: "Permissão negada")
+      };
+      
+      console.log("Tentando salvar FALHA no Firebase..."); // DEBUG
+      await push(historyRef, payload);
+      
+      // Retorna a mensagem de falha para o log da tela
+      return { success: false, message: `Offline/Falha: ${error.message}` };
+
+    } catch (dbError) {
+      // Falha total (provavelmente sem rede LTE)
+      console.error("ERRO ao tentar salvar a falha (dbError):", dbError); // DEBUG
+      
+      // Retorna a falha total para o log da tela
+      return { success: false, message: `Falha total (Sem Rede): ${dbError.message}` };
+    }
+  }
 };

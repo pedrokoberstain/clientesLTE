@@ -1,102 +1,120 @@
 // gefron-cliente/src/App.jsx
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { startListeningForPings } from "./services/dbService";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+// Importa a função de tracking que criamos
+import { logCurrentLocation } from "./services/dbService"; 
 import './App.css'; 
 
 function App() {
-  // Estado para armazenar o ID do chip que este celular representa
-  const [chipId, setChipId] = useState(''); 
-  // Estado para gerenciar o log de atividades (mensagens)
+  const [chipId, setChipId] = useState('GEFRON0102'); // Pode deixar um padrão
   const [logs, setLogs] = useState([]);
-  // Estado para verificar se a escuta está ativa
-  const [isListening, setIsListening] = useState(false);
+  const [isTracking, setIsTracking] = useState(false); // Mudei de 'isListening' para 'isTracking'
+  
+  // Referência para o intervalo
+  const intervalRef = useRef(null);
 
-  // Função para adicionar mensagens ao log
+  // Função de Log (igual a sua, está ótima)
   const logMessage = useCallback((message) => {
     setLogs((prevLogs) => [
       `${new Date().toLocaleTimeString()} | ${message}`,
-      ...prevLogs, // Adiciona a nova mensagem no topo
+      ...prevLogs,
     ]);
   }, []);
 
-  // Efeito que inicia/para a escuta do Firebase quando o chipId muda
+  // Efeito que gerencia o intervalo de tracking
   useEffect(() => {
-    let stopListening;
-
-    if (isListening && chipId) {
-      logMessage(`Iniciando escuta para o Chip ID: ${chipId}`);
-      // Inicia a escuta, passando a função de log
-      stopListening = startListeningForPings(chipId, logMessage);
-    } else if (stopListening) {
-      // Se pararmos de escutar, limpa o listener
-      stopListening();
+    // Limpa qualquer intervalo anterior
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
 
-    // Função de limpeza do useEffect (rodará quando o componente desmontar ou as dependências mudarem)
+    // Se o tracking estiver ativo...
+    if (isTracking && chipId) {
+      logMessage(`Iniciando tracking para ${chipId}. Enviando a cada 3 segundos.`);
+      
+      // Função anônima para rodar o processo
+      const runTracking = async () => {
+        try {
+          const result = await logCurrentLocation(chipId);
+          logMessage(result.message);
+        } catch (error) {
+          logMessage(`Erro no loop de tracking: ${error.message}`);
+        }
+      };
+
+      // 1. Roda imediatamente na primeira vez
+      runTracking();
+
+      // 2. Cria o intervalo para rodar a cada X segundos
+      // ATENÇÃO: 1 segundo é muito rápido. Sugiro 3s (3000ms) ou 5s (5000ms).
+      intervalRef.current = setInterval(runTracking, 3000); 
+    }
+
+    // Função de limpeza (quando o componente desmonta ou 'isTracking' muda)
     return () => {
-      if (stopListening) {
-        stopListening();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        logMessage("Tracking parado.");
       }
     };
-  }, [chipId, isListening, logMessage]);
+  }, [isTracking, chipId, logMessage]); // Dependências
 
 
-  const toggleListening = () => {
+  const toggleTracking = () => {
     if (!chipId) {
-      alert("Por favor, insira o Chip ID para iniciar a escuta.");
+      alert("Por favor, insira o ID do Chip/Viatura.");
       return;
     }
-
-    // Inverte o estado da escuta (liga/desliga)
-    setIsListening((prev) => !prev);
+    // Inverte o estado
+    setIsTracking((prev) => !prev);
   };
 
   return (
+    // Sugiro usar a sua estrutura anterior, que era mais completa
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
       <h1 style={{ textAlign: 'center' }}>Cliente PWA GEFRON LTE</h1>
-      <p style={{ textAlign: 'center' }}>Modo de Escuta em Tempo Real</p>
+      <p style={{ textAlign: 'center' }}>Modo de Teste de Cobertura</p>
       
       <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
         <h3 style={{ marginTop: '0' }}>Configuração do Dispositivo</h3>
         
-        <label htmlFor="chipId">ID do Chip / Dispositivo:</label>
+        <label htmlFor="chipId">ID do Chip / Viatura:</label>
         <input
           id="chipId"
           type="text"
           value={chipId}
           onChange={(e) => setChipId(e.target.value)}
           placeholder="Ex: GEFRON-001"
-          disabled={isListening}
+          disabled={isTracking} // Desabilita enquanto está rodando
           style={{ width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' }}
         />
         
         <button 
-          onClick={toggleListening}
+          onClick={toggleTracking}
           disabled={!chipId}
           style={{ 
             width: '100%', 
             padding: '10px', 
-            backgroundColor: isListening ? '#dc3545' : '#28a745', 
+            backgroundColor: isTracking ? '#dc3545' : '#28a745', // Vermelho ou Verde
             color: 'white', 
             border: 'none', 
             borderRadius: '4px', 
             cursor: 'pointer' 
           }}
         >
-          {isListening ? 'PARAR ESCUTA' : 'INICIAR ESCUTA DO FIREBASE'}
+          {isTracking ? 'PARAR TESTE' : 'INICIAR TESTE DE COBERTURA'}
         </button>
       </div>
 
       <h3>Log de Atividades:</h3>
-      <div style={{ maxHeight: '300px', overflowY: 'scroll', border: '1px solid #333', padding: '10px', backgroundColor: '#222', color: '#00ff00', fontFamily: 'monospace' }}>
+      <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #333', padding: '10px', backgroundColor: '#222', color: '#00ff00', fontFamily: 'monospace' }}>
         {logs.length > 0 ? (
           logs.map((log, index) => <p key={index} style={{ margin: '2px 0', fontSize: '12px' }}>{log}</p>)
         ) : (
-          <p style={{ color: '#aaa' }}>Aguardando o ID do chip e o início da escuta...</p>
+          <p style={{ color: '#aaa' }}>Aguardando início do teste...</p>
         )}
       </div>
-
     </div>
   );
 }
