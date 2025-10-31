@@ -1,5 +1,3 @@
-/* src/App.css */
-
 /* Container principal do PWA */
 .pwa-container {
   padding: 20px;
@@ -13,22 +11,22 @@
 /* --- ESTILO DA LOGO (NO TOPO E ARREDONDADA) --- */
 .pwa-logo {
   width: 150px; 
-  height: 150px; /* Definindo altura igual à largura para ficar um círculo perfeito */
-  object-fit: cover; /* Garante que a imagem preencha o círculo sem distorcer */
+  height: 150px; 
+  object-fit: cover;
   margin: 0 auto; 
   margin-bottom: 5px; 
-  border-radius: 50%; /* Faz a imagem ficar circular */
-  border: 3px solid #28a745; /* Opcional: Adiciona uma borda verde ao redor da logo */
-  box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); /* Opcional: Adiciona um brilho verde */
+  border-radius: 50%; 
+  border: 3px solid #28a745; 
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.6); 
 }
 
 body {
   /* --- NOVO: LOGO DE FUNDO DA PÁGINA INTEIRA --- */
-  background-image: url('./assets/gefron-logo.jpg'); /* Caminho para a sua logo */
-  background-size: cover; /* Faz a imagem cobrir todo o container */
-  background-position: center; /* Centraliza a imagem */
-  background-repeat: no-repeat; /* Não repete a imagem */
-  background-attachment: fixed; /* A logo fica fixa ao rolar */
+  background-image: url('./assets/gefron-logo.jpg'); 
+  background-size: cover; 
+  background-position: center; 
+  background-repeat: no-repeat;
+  background-attachment: fixed; 
   
   /* Cor de fundo para escurecer a logo e ser o tema base */
   background-color: #1e1e1e; 
@@ -36,7 +34,7 @@ body {
   background-blend-mode: multiply; 
   
   /* Ajuste a opacidade aqui. 0.2 (20%) é um bom começo, mas você pode experimentar. */
-  opacity: 0.7; /* A opacidade é para o background inteiro, então o conteúdo fica claro */
+  opacity: 0.7;
 }
 
 /* Títulos */
